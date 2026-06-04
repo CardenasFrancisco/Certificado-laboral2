@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SIRHU - Verificación de documentos</title>
+  <link rel="icon" type="image/png" href="https://sirhu.complementoshumanos.com/favicon.ico"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal:       #2e8b8b;
+      --teal-dark:  #236b6b;
+      --teal-light: #e8f5f5;
+      --magenta:    #c0185a;
+      --magenta-hov:#a01248;
+      --text:       #2c2c2c;
+      --muted:      #666;
+      --border:     #d4dfe0;
+      --bg:         #f2f4f5;
+      --white:      #ffffff;
+      --shadow:     0 2px 8px rgba(0,0,0,.08);
+      --error:      #c0392b;
+    }
+
+    body {
+      font-family: 'IBM Plex Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOP BAR ── */
+    header {
+      background: var(--teal);
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(0,0,0,.18);
+    }
+
+    .btn-salir {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #fff;
+      font-size: .85rem;
+      font-weight: 500;
+      letter-spacing: .04em;
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      transition: background .15s;
+    }
+    .btn-salir:hover { background: rgba(255,255,255,.15); }
+    .btn-salir svg { width: 16px; height: 16px; }
+
+    /* ── BREADCRUMB ── */
+    .breadcrumb {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .88rem;
+    }
+    .breadcrumb .home {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--teal);
+      font-weight: 600;
+    }
+    .breadcrumb .home svg { width: 18px; height: 18px; }
+
+    /* ── MAIN ── */
+    main {
+      flex: 1;
+      padding: 28px 32px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ── SEARCH CARD ── */
+    .card {
+      background: var(--white);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      padding: 28px 24px;
+      animation: fadeUp .3s ease both;
+    }
+
+    .search-label {
+      font-size: .88rem;
+      font-weight: 500;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+    .search-label span { color: var(--magenta); }
+
+    .search-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+    }
+
+    .input-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .input-wrap input {
+      width: 100%;
+      border: none;
+      border-bottom: 2px solid var(--teal);
+      padding: 10px 0 8px;
+      font-size: .95rem;
+      font-family: 'IBM Plex Sans', sans-serif;
+      color: var(--text);
+      background: transparent;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .input-wrap input::placeholder { color: #aab; }
+    .input-wrap input:focus { border-color: var(--teal-dark); }
+
+    .btn-consultar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--magenta);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 11px 22px;
+      font-size: .88rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      white-space: nowrap;
+    }
+    .btn-consultar:hover  { background: var(--magenta-hov); }
+    .btn-consultar:active { transform: scale(.97); }
+    .btn-consultar svg { width: 16px; height: 16px; }
+
+    /* ── ERROR MSG ── */
+    .error-msg {
+      display: none;
+      margin-top: 14px;
+      padding: 10px 16px;
+      background: #fdf0ef;
+      border-left: 4px solid var(--error);
+      border-radius: 3px;
+      font-size: .85rem;
+      color: var(--error);
+      font-weight: 500;
+      animation: fadeUp .25s ease both;
+    }
+    .error-msg.visible { display: block; }
+
+    /* ── SECTION PANEL ── */
+    .panel {
+      background: var(--white);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      animation: fadeUp .35s ease both;
+    }
+    .panel:nth-child(2) { animation-delay: .1s; }
+    .panel:nth-child(3) { animation-delay: .2s; }
+
+    .panel-header {
+      background: var(--teal-light);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 18px;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--teal-dark);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    /* retro TV panel */
+    .panel-body {
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f9fbfb;
+    }
+
+    .tv-group { display: flex; align-items: flex-end; gap: 10px; opacity: .85; }
+    .tv { display: flex; flex-direction: column; align-items: center; }
+    .tv-body {
+      background: #b5651d;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: inset -3px -3px 6px rgba(0,0,0,.25), 2px 2px 4px rgba(0,0,0,.2);
+    }
+    .tv-screen { background: #c8c8c8; border-radius: 3px; box-shadow: inset 2px 2px 4px rgba(0,0,0,.3); }
+    .tv-stand  { background: #8b4513; border-radius: 2px; }
+
+    .tv-lg .tv-body   { width:90px; height:72px; }
+    .tv-lg .tv-screen { width:68px; height:52px; }
+    .tv-lg .tv-stand  { width:30px; height:8px;  margin-top:2px; }
+
+    .tv-md .tv-body   { width:72px; height:58px; }
+    .tv-md .tv-screen { width:54px; height:40px; }
+    .tv-md .tv-stand  { width:24px; height:6px;  margin-top:2px; }
+
+    .tv-sm .tv-body   { width:52px; height:42px; }
+    .tv-sm .tv-screen { width:38px; height:28px; }
+    .tv-sm .tv-stand  { width:18px; height:5px;  margin-top:2px; }
+
+    .tv-xs .tv-body   { width:38px; height:32px; }
+    .tv-xs .tv-screen { width:28px; height:20px; }
+    .tv-xs .tv-stand  { width:14px; height:4px;  margin-top:1px; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      padding: 12px 32px;
+      font-size: .78rem;
+      color: var(--muted);
+    }
+    footer a { color: var(--teal); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <header>
+    <button class="btn-salir">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636A9 9 0 1 0 18.364 18.364M12 3v9"/>
+      </svg>
+      Salir
+    </button>
+  </header>
+
+  <!-- BREADCRUMB -->
+  <nav class="breadcrumb">
+    <span class="home">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-3-3v6M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-4h4v4h4a1 1 0 001-1v-9"/>
+      </svg>
+      SIRHU - Verificación de documentos
+    </span>
+    <span style="color:var(--muted)">/</span>
+    <span style="color:var(--muted); font-weight:400">Certificado laboral</span>
+  </nav>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- SEARCH CARD -->
+    <div class="card">
+      <p class="search-label">Ingrese el código de verificación<span>*</span></p>
+      <div class="search-row">
+        <div class="input-wrap">
+          <input
+            id="codigoInput"
+            type="text"
+            placeholder="Código de verificación"
+            autocomplete="off"
+          />
+        </div>
+        <button class="btn-consultar" id="btnConsultar">
+          CONSULTAR
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
+          </svg>
+        </button>
+      </div>
+      <div class="error-msg" id="errorMsg">
+        ⚠ Código no existe. Por favor verifique e intente nuevamente.
+      </div>
+    </div>
+
+    <!-- SIRHU PANEL -->
+    <div class="panel">
+      <div class="panel-header">SIRHU</div>
+      <div class="panel-body">
+        <div class="tv-group">
+          <div class="tv tv-xs"><div class="tv-body"><div class="tv-screen"></div></div><div class="tv-stand"></div></div>
+          <div class="tv tv-sm"><div class="tv-body"><div class="tv-screen"></div></div><div class="tv-stand"></div></div>
+          <div class="tv tv-lg"><div class="tv-body"><div class="tv-screen"></div></div><div class="tv-stand"></div></div>
+          <div class="tv tv-md"><div class="tv-body"><div class="tv-screen"></div></div><div class="tv-stand"></div></div>
+          <div class="tv tv-xs"><div class="tv-body"><div class="tv-screen"></div></div><div class="tv-stand"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARIS PANEL -->
+    <div class="panel">
+      <div class="panel-header">CARIS – Medicina Laboral</div>
+      <div class="panel-body">
+        <div class="tv-group">
+          <div class="tv tv-xs"><div class="tv-body"><div class="tv-screen"></div></div><div class="tv-stand"></div></div>
+          <div class="tv tv-sm"><div class="tv-body"><div class="tv-screen"></div></div><div class="tv-stand"></div></div>
+          <div class="tv tv-lg"><div class="tv-body"><div class="tv-screen"></div></div><div class="tv-stand"></div></div>
+          <div class="tv tv-md"><div class="tv-body"><div class="tv-screen"></div></div><div class="tv-stand"></div></div>
+          <div class="tv tv-xs"><div class="tv-body"><div class="tv-screen"></div></div><div class="tv-stand"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    © 2018. <a href="https://complementoshumanos.com" target="_blank">SIRHU</a> por
+    <a href="https://complementoshumanos.com" target="_blank">Complementos Humanos S.A</a>
+  </footer>
+
+  <script>
+    const VALID_CODE = 'CL-2-127770';
+
+    function consultar() {
+      const input = document.getElementById('codigoInput');
+      const errorMsg = document.getElementById('errorMsg');
+      const codigo = input.value.trim();
+
+      errorMsg.classList.remove('visible');
+
+      if (!codigo) {
+        input.focus();
+        return;
+      }
+
+      if (codigo.toUpperCase() === VALID_CODE.toUpperCase()) {
+        window.location.href = 'certificado_laboral.html';
+      } else {
+        errorMsg.classList.add('visible');
+        input.focus();
+      }
+    }
+
+    document.getElementById('btnConsultar').addEventListener('click', consultar);
+
+    document.getElementById('codigoInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') consultar();
+      // Ocultar error al escribir
+      document.getElementById('errorMsg').classList.remove('visible');
+    });
+  </script>
+
+</body>
+</html>
